@@ -87,6 +87,7 @@ namespace UnityEditor.AddressableAssets.Settings
         /// Default name of remote load path.
         /// </summary>
         public const string kRemoteLoadPath = "Remote.LoadPath";
+        public static string oldCatalog = string.Empty;
 
         private const string kLocalGroupTypePrefix = "Built-In";
         internal static string LocalGroupTypePrefix => kLocalGroupTypePrefix; 
@@ -2571,6 +2572,9 @@ namespace UnityEditor.AddressableAssets.Settings
             {
                 try
                 {
+                    if (File.Exists(Addressables.BuildPath + "/catalog.json")) {
+                        oldCatalog = File.ReadAllText(Addressables.BuildPath + "/catalog.json");
+                    }
                     Directory.Delete(Addressables.BuildPath, true);
                 }
                 catch (Exception e)

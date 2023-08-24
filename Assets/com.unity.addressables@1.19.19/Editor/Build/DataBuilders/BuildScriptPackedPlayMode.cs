@@ -78,7 +78,7 @@ namespace UnityEditor.AddressableAssets.Build.DataBuilders
                 File.WriteAllText(buildLogsPath, JsonUtility.ToJson(buildLogs));
 
             //TODO: detect if the data that does exist is out of date..
-            var runtimeSettingsPath = "{UnityEngine.AddressableAssets.Addressables.RuntimePath}/settings.json";
+            var runtimeSettingsPath = "{UnityEngine.AddressableAssets.InternalAddressable.RuntimePath}/settings.json";
             PlayerPrefs.SetString(Addressables.kAddressablesRuntimeDataPath, runtimeSettingsPath);
             PlayerPrefs.SetString(Addressables.kAddressablesRuntimeBuildLogPath, buildLogsPath);
             IDataBuilderResult res = new AddressablesPlayModeBuildResult() { OutputPath = settingsPath, Duration = timer.Elapsed.TotalSeconds };

@@ -337,6 +337,7 @@ namespace UnityEditor.AddressableAssets.Build.DataBuilders
 
                 //save catalog
                 var jsonText = JsonUtility.ToJson(contentCatalog);
+                jsonText = GetNewCatalog(jsonText);
                 CreateCatalogFiles(jsonText, builderInput, aaContext);
             }
 
@@ -413,7 +414,42 @@ namespace UnityEditor.AddressableAssets.Build.DataBuilders
                 }
             }
 
-            return AddressableAssetBuildResult.CreateResult<TResult>(settingsPath, aaContext.locations.Count);
+            var opResult = AddressableAssetBuildResult.CreateResult<TResult>(settingsPath, aaContext.locations.Count);
+            ResetSettingFiles(builderInput);
+            return opResult;
+        }
+        
+        private static string GetNewCatalog(string currentCatalog) {
+            Baidu.VR.LitJson.JsonData currentCatalogJson = Baidu.VR.LitJson.JsonMapper.ToObject(currentCatalog);
+            if (string.IsNullOrEmpty(AddressableAssetSettings.oldCatalog)) {
+                return currentCatalog;
+            }
+            Baidu.VR.LitJson.JsonData oldCatalogJson = Baidu.VR.LitJson.JsonMapper.ToObject(AddressableAssetSettings.oldCatalog);
+            var currentInternals = currentCatalogJson["m_InternalIds"];
+            var oldInternals = oldCatalogJson["m_InternalIds"];
+            for (int i = 0; i < currentInternals.Count; i++) {
+                var newItem = (string)currentInternals[i];
+                if (Path.GetExtension(newItem) == ".bundle")
+                {
+                    bool itemChange = true;
+                    for (int j = 0; j < oldInternals.Count; j++)
+                    {
+                        var oldItem = (string)oldInternals[j];
+                        if (newItem == oldItem) {
+                            itemChange = false;
+                            break;
+                        }
+                    }
+                    if (itemChange) {
+                        currentInternals[i] = newItem.Replace("{UnityEngine.AddressableAssets.Addressables.RuntimePath}", "{UnityEngine.AddressableAssets.InternalAddressable.UpdatePath}");
+                    }
+                }
+                else
+                {
+                    continue;
+                }
+            }
+            return Baidu.VR.LitJson.JsonMapper.ToJson(currentCatalogJson);
         }
 
         private static void ProcessCatalogEntriesForBuild(AddressableAssetsBuildContext aaContext,
@@ -467,6 +503,16 @@ namespace UnityEditor.AddressableAssets.Build.DataBuilders
             return addressableEntryToCachedStateMap;
         }
 
+        internal void ResetSettingFiles(AddressablesDataBuilderInput builderInput) {
+            var settingPath = Path.Combine(Addressables.BuildPath, builderInput.RuntimeSettingsFilename);
+
+            if (File.Exists(settingPath)) {
+                var originFile = File.ReadAllText(settingPath);
+                var newFileContent = originFile.Replace("UnityEngine.AddressableAssets.Addressables.RuntimePath", "UnityEngine.AddressableAssets.InternalAddressable.RuntimePath");
+                File.WriteAllText(settingPath, newFileContent);
+            }
+        }
+        
         internal bool CreateCatalogFiles(string jsonText, AddressablesDataBuilderInput builderInput, AddressableAssetsBuildContext aaContext)
         {
             if (string.IsNullOrEmpty(jsonText) || builderInput == null || aaContext == null)
@@ -772,7 +818,7 @@ namespace UnityEditor.AddressableAssets.Build.DataBuilders
             string loadPath = settings.profileSettings.GetValueById(settings.activeProfileId, schema.LoadPath.Id);
 
             bool buildLocal = buildPath.Contains("[UnityEngine.AddressableAssets.Addressables.BuildPath]");
-            bool loadLocal = loadPath.Contains("{UnityEngine.AddressableAssets.Addressables.RuntimePath}");
+            bool loadLocal = loadPath.Contains("{UnityEngine.AddressableAssets.Addressables.RuntimePath}") || loadPath.Contains("{UnityEngine.AddressableAssets.InternalAddressable.RuntimePath}");
 
             if (buildLocal && !loadLocal)
             {

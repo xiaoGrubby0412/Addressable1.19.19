@@ -117,6 +117,7 @@ namespace UnityEngine.ResourceManagement.ResourceProviders
             internal SceneInstance InternalLoadScene(IResourceLocation location, bool loadingFromBundle, LoadSceneMode loadMode, bool activateOnLoad, int priority)
             {
                 var internalId = m_ResourceManager.TransformInternalId(location);
+                Debug.Log("[Addressable]###### internalId Scene:" + internalId);
                 var op = InternalLoad(internalId, loadingFromBundle, loadMode);
                 op.allowSceneActivation = activateOnLoad;
                 op.priority = priority;

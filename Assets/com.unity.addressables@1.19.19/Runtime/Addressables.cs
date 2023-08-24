@@ -340,6 +340,18 @@ namespace UnityEngine.AddressableAssets
                 return m_AddressablesInstance;
             }
         }
+        
+        public static void Reset() {
+            if (m_AddressablesInstance != null) {
+                try { m_AddressablesInstance.ReleaseAllAssets(); } catch (Exception e) { Debug.LogError("[Zion] Addressables::Reset ReleaseAllAssets Exception:" + e.ToString()); }             
+                try { m_AddressablesInstance.ClearResourceLocators(); } catch (Exception e) { Debug.LogError("[Zion] Addressables::Reset ClearResourceLocators Exception:" + e.ToString()); }
+                try { m_AddressablesInstance.ResourceManager.ResourceProviders.Clear(); } catch (Exception e) { Debug.LogError("[Zion] Addressables::Reset Clear Exception:" + e.ToString()); }
+                m_AddressablesInstance.InstanceProvider = null;
+            }
+            try { m_AddressablesInstance.ReleaseSceneManagerOperation();  } catch (Exception e) { Debug.LogError("[Zion] Addressables::Reset ReleaseSceneManagerOperation Exception:" + e.ToString()); }
+            m_AddressablesInstance = new AddressablesImpl(new LRUCacheAllocationStrategy(1000, 1000, 100, 10));
+        }
+        
         /// <summary>
         /// Stores the ResourceManager associated with this Addressables instance.
         /// </summary>
@@ -470,7 +482,7 @@ namespace UnityEngine.AddressableAssets
         /// The path used by the Addressables system to load initialization data.
         /// </summary>
         public static string RuntimePath { get { return m_Addressables.RuntimePath; } }
-
+        public static string DevelopPath { get { return m_Addressables.DevelopPath; } }
 
         /// <summary>
         /// Gets the collection of configured <see cref="IResourceLocator"/> objects. Resource Locators are used to find <see cref="IResourceLocation"/> objects from user-defined typed keys.
@@ -544,6 +556,15 @@ namespace UnityEngine.AddressableAssets
         public static void LogWarning(string msg)
         {
             m_Addressables.LogWarning(msg);
+        }
+        
+        public static void SetDeveloper(string relativeFolder, bool local = false) {
+            m_Addressables.SetDeveloper(relativeFolder, local);
+
+            //reinitializeAddressables = false;
+            //m_AddressablesInstance.ReleaseSceneManagerOperation();
+            //m_AddressablesInstance = new AddressablesImpl(new LRUCacheAllocationStrategy(1000, 1000, 100, 10));
+
         }
 
         /// <summary>

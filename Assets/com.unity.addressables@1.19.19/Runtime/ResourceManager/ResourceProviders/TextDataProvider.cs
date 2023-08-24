@@ -64,8 +64,9 @@ namespace UnityEngine.ResourceManagement.ResourceProviders
                         path = @"\\?\" + path;
 #endif
                     var text = File.ReadAllText(path);
+                    Debug.Log($"[Addressable]#####path:{path}:json text:{text}");
                     object result = ConvertText(text);
-                    m_PI.Complete(result, result != null, result == null ? new Exception($"Unable to load asset of type {m_PI.Type} from location {m_PI.Location}.") : null);
+                    m_PI.Complete(result, result != null, result == null ? new Exception($"Unable to load asset of type {m_PI.Type} from location {path}.") : null);
                     m_Complete = true;
                 }
                 else

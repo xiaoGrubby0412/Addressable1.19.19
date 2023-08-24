@@ -121,6 +121,13 @@ namespace UnityEngine.AddressableAssets
             m_ResourceManager = new ResourceManager(alloc);
             SceneManager.sceneUnloaded += OnSceneUnloaded;
         }
+        
+        public AddressablesImpl(IAllocationStrategy alloc, bool isInternal)
+        {
+            m_ResourceManager = new ResourceManager(alloc);
+            SceneManager.sceneUnloaded += OnSceneUnloaded;
+            m_IsInternal = isInternal;
+        }
 
         internal void ReleaseSceneManagerOperation()
         {
@@ -196,7 +203,7 @@ namespace UnityEngine.AddressableAssets
         {
             get
             {
-                return "aa";
+                return "baidu";
             }
         }
 
@@ -212,8 +219,36 @@ namespace UnityEngine.AddressableAssets
                 return Application.streamingAssetsPath + "/" + StreamingAssetsSubFolder;
             }
         }
+        
+        public string UpdatePath
+        {
+            get
+            {
+                return "file://" + Application.persistentDataPath + "/baidu";
+            }
+        }
+        private string _runtimePath = string.Empty;
 
         public string RuntimePath
+        {
+            get
+            {
+#if UNITY_EDITOR
+                Debug.Log("###### RealPath:" + m_IsInternal.ToString() + "   " + _runtimePath);
+                return _runtimePath;
+#else
+                Debug.Log("###### RealPath:" + m_IsInternal.ToString() + "   " + _runtimePath);
+                return m_IsInternal ? PlayerBuildDataPath : _runtimePath;
+#endif
+            }
+        }
+        
+        public string DevelopPath
+        {
+            get { return _runtimePath; }
+        }
+        
+        public string InternalRuntimePath
         {
             get
             {
@@ -223,6 +258,25 @@ namespace UnityEngine.AddressableAssets
                 return PlayerBuildDataPath;
 #endif
             }
+        }
+        
+        private string m_RelativeFolder = string.Empty;
+        
+        public void SetDeveloper(string relativeFolder, bool islocal) {
+            m_ChooseLocal = islocal;
+            Debug.Log($"bundle debug: {relativeFolder} use: local {m_ChooseLocal}");
+            if (m_RelativeFolder == relativeFolder)
+            {
+                return;
+            }
+            //bool NeedResetAssets = !string.IsNullOrEmpty(m_RelativeFolder); //为空不需要重置资源
+            m_RelativeFolder = relativeFolder;
+            _runtimePath = "file://" + Application.persistentDataPath + "/" + relativeFolder;
+            Debug.Log("[Addressable]###### RuntimePath:" + _runtimePath);
+            //if (NeedResetAssets)
+            //{
+            //    ReleaseAllAssets();
+            //}
         }
 
         public void Log(string msg)
@@ -467,16 +521,21 @@ namespace UnityEngine.AddressableAssets
 
             return m_InitializationOperation;
         }
+        
+        private bool m_IsInternal = false;
+        bool m_ChooseLocal = true;
 
         public AsyncOperationHandle<IResourceLocator> InitializeAsync()
         {
             var settingsPath =
 #if UNITY_EDITOR
-                PlayerPrefs.GetString(Addressables.kAddressablesRuntimeDataPath, RuntimePath + "/settings.json");
+                m_ChooseLocal?
+                    "GUID:" + UnityEditor.AssetDatabase.AssetPathToGUID("Assets/AddressableAssetsData/AddressableAssetSettings.asset"):RuntimePath + "/settings.json";
 #else
                 RuntimePath + "/settings.json";
 #endif
 
+            Debug.Log($"bundle debug: local:{m_ChooseLocal} "+settingsPath+","+ RuntimePath);
             return InitializeAsync(ResolveInternalId(settingsPath));
         }
 
@@ -811,6 +870,22 @@ namespace UnityEngine.AddressableAssets
             else
             {
                 LogError("Addressables.Release was called on an object that Addressables was not previously aware of.  Thus nothing is being released");
+            }
+        }
+        
+        public void ReleaseAllAssets()
+        {
+            var handles = m_resultToHandle.Values.ToArray();
+            // foreach (var handle in m_resultToHandle.Values) 
+            foreach (var handle in handles) 
+            {
+                if (handle.m_InternalOp == null) 
+                    continue;
+
+                while (handle.IsValid() && handle.ReferenceCount != 0) 
+                {
+                    Release(handle);
+                }
             }
         }
 
