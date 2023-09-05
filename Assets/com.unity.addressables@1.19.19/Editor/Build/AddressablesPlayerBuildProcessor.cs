@@ -149,7 +149,7 @@ public class AddressablesPlayerBuildProcessor : BuildPlayerProcessor
     {
         List<KeyValuePair<string, string>> pairs = new List<KeyValuePair<string, string>>(1);
         if (Directory.Exists(Addressables.BuildPath))
-            pairs.Add(new KeyValuePair<string, string>(Addressables.BuildPath, "aa"));
+            pairs.Add(new KeyValuePair<string, string>(Addressables.BuildPath, "baidu"));
         return pairs;
     }
 }
